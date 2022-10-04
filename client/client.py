@@ -12,7 +12,15 @@ def receive_message_ending_with_token(active_socket, buffer_size, eof_token):
     :param eof_token: a token that denotes the end of the message.
     :return: a bytearray message with the eof_token stripped from the end.
     """
-    raise NotImplementedError('Your implementation here.')
+    working_directory_info = bytearray()
+    while True:
+        recv_packet = active_socket.recv(buffer_size)
+        working_directory_info.extend(recv_packet)
+        if recv_packet[-10:] == eof_token:
+            working_directory_info = working_directory_info[:-10]
+            break
+    print('Working Directory Info:', working_directory_info.decode())
+    # raise NotImplementedError('Your implementation here.')
 
 
 def initialize(host, port):
@@ -25,13 +33,25 @@ def initialize(host, port):
     :param port: the port number of the server
     :return: the created socket object
     """
+    global eof_key
+    global client_socket_obj
+    try:
+        client_socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("Client Socket Successfully Created !")
+    except socket.error as s_error:
+        print(f"Client socket is not created due to this error : {s_error}")
+    
+    
+    # with client_socket_obj: #if uncomment this it means only valid till client_socket_obj is available
+    client_socket_obj.connect((host, port)) #connect to server 
+    print('Connected to server at IP:', host, 'and Port:', port)
+    eof_key = client_socket_obj.recv(1024)
+    print('Handshake Done. EOF is:', eof_key.decode())
+    receive_message_ending_with_token(client_socket_obj,1024,eof_key)
+        
 
-    # print('Connected to server at IP:', host, 'and Port:', port)
 
-
-    # print('Handshake Done. EOF is:', eof_token)
-
-    raise NotImplementedError('Your implementation here.')
+    # raise NotImplementedError('Your implementation here.')
 
 
 def issue_cd(command_and_arg, client_socket, eof_token):
@@ -43,7 +63,10 @@ def issue_cd(command_and_arg, client_socket, eof_token):
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+    print("Change Directory Called ",command_and_arg)
+    client_socket.sendall(command_and_arg.encode())
+    # receive_message_ending_with_token(client_socket,1024, eof_token)
+    
 
 
 def issue_mkdir(command_and_arg, client_socket, eof_token):
@@ -55,7 +78,12 @@ def issue_mkdir(command_and_arg, client_socket, eof_token):
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+    print("Create Directory Called ",command_and_arg)
+    
+    client_socket.sendall(command_and_arg.encode())
+    # receive_message_ending_with_token(client_socket,1024, eof_token)
+
+    
 
 
 def issue_rm(command_and_arg, client_socket, eof_token):
@@ -67,7 +95,10 @@ def issue_rm(command_and_arg, client_socket, eof_token):
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+    print("Remove  Directory Called ",command_and_arg)
+    
+    client_socket.sendall(command_and_arg.encode())
+    
 
 
 def issue_ul(command_and_arg, client_socket, eof_token):
@@ -100,17 +131,53 @@ def main():
     HOST = "127.0.0.1"  # The server's hostname or IP address
     PORT = 65432  # The port used by the server
 
-    raise NotImplementedError('Your implementation here.')
+    # raise NotImplementedError('Your implementation here.')
 
-    # initialize
+    initialize(HOST,PORT)
 
-    # while True:
+    while True:
         # get user input
+        try:
+            
+            print('1. Change Directory')
+            print('2. Make New Directory')
+            print('3. Remove Directory')
+            print('4. Upload a File')
+            print('5. Download a File')
+            print('6. Exit')
+            num = int(input('Enter your choice: '))
+            
+           
 
+            
+            if num == 1:
+                user_dir_command = input('Enter a command for change directory : ')                
+                issue_cd(user_dir_command, client_socket_obj, eof_key)
+                
+            elif num == 2:
+                user_dir_command = input('Enter a command for new directory : ')
+                issue_mkdir(user_dir_command, client_socket_obj, eof_key)
+            elif num == 3:  
+                user_dir_command = input('Enter a command for remove directory/file : ')
+                issue_rm(user_dir_command,client_socket_obj, eof_key)
+
+            elif num == 4:
+                issue_ul()
+            elif num == 5:
+                issue_dl()
+            elif num == 6:
+                print('Connection Closed !!!')
+                client_socket_obj.sendall('exit'.encode())
+                client_socket_obj.close()
+                break    
+            
+
+        except ValueError:
+            print('Invalid Input Try Again !.')   
         # call the corresponding command function or exit
 
 
-    # print('Exiting the application.')
+    print('Exiting the application.')
 
 
 if __name__ == '__main__':
