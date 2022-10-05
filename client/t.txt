@@ -1,0 +1,11 @@
+Current Directory: E:\Master's\DSD\Socket-Programming\server:
+|
+-- animals
+-- patel
+-- products
+-- server.py<OGnEoh4L>hiii downloading<OGnEoh4L>Current Directory: E:\Master's\DSD\Socket-Programming\server:
+|
+-- animals
+-- patel
+-- products
+-- server.py

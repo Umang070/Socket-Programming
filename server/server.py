@@ -5,7 +5,6 @@ from threading import Thread
 import os
 import shutil
 from pathlib import Path
-from xml.etree.ElementInclude import include
 
 
 def get_working_directory_info(working_directory):
@@ -42,13 +41,14 @@ def receive_message_ending_with_token(active_socket, buffer_size, eof_token):
     :param eof_token: a token that denotes the end of the message.
     :return: a bytearray message with the eof_token stripped from the end.
     """
-    
+    recv_data = bytearray()
     while True:
         recv_packet = active_socket.recv(buffer_size)
-        if recv_packet.decode()[-10:] == eof_token:
-            recv_packet = recv_packet[:-10]
+        recv_data.extend(recv_packet)
+        if recv_packet[-10:] == eof_token.encode():
+            recv_data = recv_data[:-10]
             break
-    return recv_packet
+    return recv_data
     # raise NotImplementedError('Your implementation here.')
 
 
@@ -61,13 +61,14 @@ def handle_cd(current_working_directory, new_working_directory):
     :return: absolute path of new current working directory
     """
     print("Change Directory: ", current_working_directory)
+    new_dir_path = os.path.join(current_working_directory, new_working_directory.split()[1])
     try:
-        os.chdir(new_working_directory.split()[1])
+        os.chdir(new_dir_path)
         return os.getcwd()
     except FileNotFoundError:
-        print(f"Directory: {new_working_directory} does not exist")
+        print(f"Directory: {new_dir_path} does not exist")
     except NotADirectoryError:
-        print(f"{new_working_directory} is not a directory")
+        print(f"{new_dir_path} is not a directory")
 
 
 
@@ -132,7 +133,13 @@ def handle_ul(current_working_directory, file_name, service_socket, eof_token):
     :param service_socket: active socket with the client to read the payload/contents from.
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+    new_file_path = os.path.join(current_working_directory, file_name)
+
+    file = open(new_file_path, "wb")  
+    file_content = receive_message_ending_with_token(service_socket, 1024,eof_token)
+    file.write(file_content)
+    file.close()
+    # raise NotImplementedError('Your implementation here.')
 
 
 def handle_dl(current_working_directory, file_name, service_socket, eof_token):
@@ -144,7 +151,13 @@ def handle_dl(current_working_directory, file_name, service_socket, eof_token):
     :param service_socket: active service socket with the client
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+    
+    
+  
+    with open(file_name,'rb') as f:
+                file_content = f.read()
+    file_content_with_EOF = file_content + eof_token.encode()  
+    service_socket.sendall(file_content_with_EOF)
 
 
 class ClientThread(Thread):
@@ -182,21 +195,28 @@ class ClientThread(Thread):
             self.received_command_str =  self.service_socket.recv(1024).decode()
             print("Received command from client is : ",self.received_command_str)    
             # get the command and arguments and call the corresponding method
-            if 'cd' in self.received_command_str:
+            if self.received_command_str.startswith('cd'):
                 self.working_directory = handle_cd(self.working_directory, self.received_command_str)
                 # self.working_directory_info = get_working_directory_info(self.working_directory)
                 # print("After Command Executed : ",self.working_directory_info)
 
                 # self.service_socket.sendall((self.current_working_dir_info+self.eof_token).encode())
-            elif 'mkdir' in self.received_command_str:
+            elif self.received_command_str.startswith('mkdir'):
                 self.working_directory =  handle_mkdir(self.working_directory,self.received_command_str.split()[1])
-            elif 'rm' in self.received_command_str:
+            elif self.received_command_str.startswith('rm'):
                 handle_rm(self.working_directory,self.received_command_str.split()[1])
-            elif 'exit' in self.received_command_str:
+            elif self.received_command_str.startswith('ul'):
+                file_name = self.received_command_str.split()[1]
+                
+                handle_ul(self.working_directory,file_name,self.service_socket, self.eof_token)
+            elif self.received_command_str.startswith('dl'):
+                file_name = self.received_command_str.split()[1]
+                handle_dl(self.working_directory,file_name,self.service_socket,self.eof_token)
+            elif self.received_command_str.startswith('exit'):
                 break
             # send current dir info        
-            self.working_directory_info = get_working_directory_info(self.working_directory)
-            print("After Command Executed : ",self.working_directory_info)
+            self.current_working_dir_info = get_working_directory_info(self.working_directory)
+            print("After Command Executed : ",self.current_working_dir_info)
 
             self.service_socket.sendall((self.current_working_dir_info+self.eof_token).encode())
         self.service_socket.close()
@@ -210,10 +230,10 @@ def main():
         s.bind((HOST, PORT))
         s.listen()
         print("Server is Listening on port", PORT)
-        # while True:
-        service_socket, client_address = s.accept()
-        clientThreadObj = ClientThread(service_socket, client_address)
-        clientThreadObj.start()
+        while True:
+            service_socket, client_address = s.accept()
+            clientThreadObj = ClientThread(service_socket, client_address)
+            clientThreadObj.start()
         # raise NotImplementedError('Your implementation here.')
 
 

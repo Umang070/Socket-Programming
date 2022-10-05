@@ -12,15 +12,15 @@ def receive_message_ending_with_token(active_socket, buffer_size, eof_token):
     :param eof_token: a token that denotes the end of the message.
     :return: a bytearray message with the eof_token stripped from the end.
     """
-    working_directory_info = bytearray()
+    recv_data = bytearray()
     while True:
         recv_packet = active_socket.recv(buffer_size)
-        working_directory_info.extend(recv_packet)
+        recv_data.extend(recv_packet)
         if recv_packet[-10:] == eof_token:
-            working_directory_info = working_directory_info[:-10]
-            break
-    print('Working Directory Info:', working_directory_info.decode())
-    # raise NotImplementedError('Your implementation here.')
+            recv_data = recv_data[:-10]
+            break    
+    return recv_data
+    
 
 
 def initialize(host, port):
@@ -35,6 +35,7 @@ def initialize(host, port):
     """
     global eof_key
     global client_socket_obj
+    global current_dir_info
     try:
         client_socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print("Client Socket Successfully Created !")
@@ -47,7 +48,8 @@ def initialize(host, port):
     print('Connected to server at IP:', host, 'and Port:', port)
     eof_key = client_socket_obj.recv(1024)
     print('Handshake Done. EOF is:', eof_key.decode())
-    receive_message_ending_with_token(client_socket_obj,1024,eof_key)
+    current_dir_info = receive_message_ending_with_token(client_socket_obj,1024,eof_key)
+    print("Working directory information : ",current_dir_info.decode())
         
 
 
@@ -110,7 +112,15 @@ def issue_ul(command_and_arg, client_socket, eof_token):
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
     """
-    raise NotImplementedError('Your implementation here.')
+
+    #send file name to server
+    file_name = command_and_arg.split(' ')[1]
+    client_socket.sendall(command_and_arg.encode())
+  
+    with open(file_name,'rb') as f:
+                file_content = f.read()
+    file_content_with_EOF = file_content + eof_token       
+    client_socket.sendall(file_content_with_EOF)
 
 
 def issue_dl(command_and_arg, client_socket, eof_token):
@@ -124,7 +134,13 @@ def issue_dl(command_and_arg, client_socket, eof_token):
     :param eof_token: a token to indicate the end of the message.
     :return:
     """
-    raise NotImplementedError('Your implementation here.')
+    file_name = command_and_arg.split(' ')[1]
+    client_socket.sendall(command_and_arg.encode())
+    file = open(file_name, "wb")    
+    file_content = receive_message_ending_with_token(client_socket, 1024,eof_token)
+    file.write(file_content)
+    file.close()
+    
 
 
 def main():
@@ -162,14 +178,20 @@ def main():
                 issue_rm(user_dir_command,client_socket_obj, eof_key)
 
             elif num == 4:
-                issue_ul()
+                user_dir_command = input('Enter a command for file you want to upload : ')
+                issue_ul(user_dir_command,client_socket_obj, eof_key)
             elif num == 5:
-                issue_dl()
+                user_dir_command = input('Enter a command for file you want to download : ')
+                issue_dl(user_dir_command,client_socket_obj, eof_key)
             elif num == 6:
                 print('Connection Closed !!!')
                 client_socket_obj.sendall('exit'.encode())
                 client_socket_obj.close()
-                break    
+                break 
+            current_dir_info = receive_message_ending_with_token(client_socket_obj, 1024, eof_key)
+         
+            
+            print('Working Directory Info:', current_dir_info.decode())
             
 
         except ValueError:
