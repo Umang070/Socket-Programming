@@ -33,9 +33,7 @@ def initialize(host, port):
     :param port: the port number of the server
     :return: the created socket object
     """
-    global eof_key
-    global client_socket_obj
-    global current_dir_info
+    global eof_key        
     try:
         client_socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print("Client Socket Successfully Created !")
@@ -53,7 +51,7 @@ def initialize(host, port):
         
 
 
-    # raise NotImplementedError('Your implementation here.')
+    return client_socket_obj
 
 
 def issue_cd(command_and_arg, client_socket, eof_token):
@@ -67,9 +65,6 @@ def issue_cd(command_and_arg, client_socket, eof_token):
     """
     print("Change Directory Called ",command_and_arg)
     client_socket.sendall(command_and_arg.encode())
-    # receive_message_ending_with_token(client_socket,1024, eof_token)
-    
-
 
 def issue_mkdir(command_and_arg, client_socket, eof_token):
     """
@@ -137,7 +132,7 @@ def issue_dl(command_and_arg, client_socket, eof_token):
     file_name = command_and_arg.split(' ')[1]
     client_socket.sendall(command_and_arg.encode())
     file = open(file_name, "wb")    
-    file_content = receive_message_ending_with_token(client_socket, 1024,eof_token)
+    file_content = receive_message_ending_with_token(client_socket, 1024,eof_token)    
     file.write(file_content)
     file.close()
     
@@ -146,10 +141,8 @@ def issue_dl(command_and_arg, client_socket, eof_token):
 def main():
     HOST = "127.0.0.1"  # The server's hostname or IP address
     PORT = 65432  # The port used by the server
-
-    # raise NotImplementedError('Your implementation here.')
-
-    initialize(HOST,PORT)
+    
+    client_socket_object = initialize(HOST,PORT)
 
     while True:
         # get user input
@@ -168,27 +161,27 @@ def main():
             
             if num == 1:
                 user_dir_command = input('Enter a command for change directory : ')                
-                issue_cd(user_dir_command, client_socket_obj, eof_key)
+                issue_cd(user_dir_command, client_socket_object, eof_key)
                 
             elif num == 2:
                 user_dir_command = input('Enter a command for new directory : ')
-                issue_mkdir(user_dir_command, client_socket_obj, eof_key)
+                issue_mkdir(user_dir_command, client_socket_object, eof_key)
             elif num == 3:  
                 user_dir_command = input('Enter a command for remove directory/file : ')
-                issue_rm(user_dir_command,client_socket_obj, eof_key)
+                issue_rm(user_dir_command,client_socket_object, eof_key)
 
             elif num == 4:
                 user_dir_command = input('Enter a command for file you want to upload : ')
-                issue_ul(user_dir_command,client_socket_obj, eof_key)
+                issue_ul(user_dir_command,client_socket_object, eof_key)
             elif num == 5:
                 user_dir_command = input('Enter a command for file you want to download : ')
-                issue_dl(user_dir_command,client_socket_obj, eof_key)
+                issue_dl(user_dir_command,client_socket_object, eof_key)
             elif num == 6:
                 print('Connection Closed !!!')
-                client_socket_obj.sendall('exit'.encode())
-                client_socket_obj.close()
+                client_socket_object.sendall('exit'.encode())
+                client_socket_object.close()
                 break 
-            current_dir_info = receive_message_ending_with_token(client_socket_obj, 1024, eof_key)
+            current_dir_info = receive_message_ending_with_token(client_socket_object, 1024, eof_key)
          
             
             print('Working Directory Info:', current_dir_info.decode())
