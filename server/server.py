@@ -153,11 +153,11 @@ def handle_dl(current_working_directory, file_name, service_socket, eof_token):
     """
     new_file_path = os.path.join(current_working_directory, file_name)
     
-    
-    with open(new_file_path,'rb') as f:
-        file_content = f.read()
-        file_content_with_EOF = file_content + eof_token.encode()  
-        service_socket.sendall(file_content_with_EOF)
+    file = open(new_file_path, "rb")    
+    file_content = file.read()
+    file_content_with_EOF = file_content + eof_token.encode()  
+    service_socket.sendall(file_content_with_EOF)
+    file.close()    
             
 class ClientThread(Thread):
     def __init__(self, service_socket : socket.socket, address : str):
@@ -194,28 +194,29 @@ class ClientThread(Thread):
 
         
         while True:
-            self.received_command_str =  self.service_socket.recv(1024).decode()
+            self.received_command_str = receive_message_ending_with_token(self.service_socket,1024,self.eof_token).decode()
+            
             print("Received command from client is : ",self.received_command_str)    
             # get the command and arguments and call the corresponding method
             if self.received_command_str.startswith('cd'):
-                method_response = handle_cd(self.working_directory, self.received_command_str.split()[1])
+                method_response = handle_cd(self.working_directory, (self.received_command_str.split(' ')[1:]))
                 if method_response.startswith('Error'):
                     self.service_socket.sendall(method_response.encode())
                 else:
                     self.working_directory = method_response
             elif self.received_command_str.startswith('mkdir'):
-                self.working_directory =  handle_mkdir(self.working_directory,self.received_command_str.split()[1])
+                self.working_directory =  handle_mkdir(self.working_directory,self.received_command_str.split(' ')[1])
             elif self.received_command_str.startswith('rm'):
-                method_response = handle_rm(self.working_directory,self.received_command_str.split()[1])
+                method_response = handle_rm(self.working_directory,self.received_command_str.split(' ')[1])
                 if method_response.startswith('Error'):
                     self.service_socket.sendall(method_response.encode())
                 else:
                     pass
             elif self.received_command_str.startswith('ul'):
-                file_name = self.received_command_str.split()[1]                
+                file_name = self.received_command_str.split(' ')[1]                
                 handle_ul(self.working_directory,file_name,self.service_socket, self.eof_token)
             elif self.received_command_str.startswith('dl'):
-                file_name = self.received_command_str.split()[1]
+                file_name = self.received_command_str.split(' ')[1]
                 handle_dl(self.working_directory,file_name,self.service_socket,self.eof_token)
             elif self.received_command_str.startswith('exit'):
                 break

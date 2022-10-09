@@ -64,7 +64,8 @@ def issue_cd(command_and_arg, client_socket, eof_token):
     :param eof_token: a token to indicate the end of the message.
     """
     print("Change Directory Called ",command_and_arg)
-    client_socket.sendall(command_and_arg.encode())
+    client_socket.sendall(command_and_arg.encode()+eof_token)
+    print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
 
 def issue_mkdir(command_and_arg, client_socket, eof_token):
     """
@@ -77,8 +78,9 @@ def issue_mkdir(command_and_arg, client_socket, eof_token):
     """
     print("Create Directory Called ",command_and_arg)
     
-    client_socket.sendall(command_and_arg.encode())
-    # receive_message_ending_with_token(client_socket,1024, eof_token)
+    client_socket.sendall(command_and_arg.encode()+eof_token)
+    print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
+
 
     
 
@@ -94,7 +96,9 @@ def issue_rm(command_and_arg, client_socket, eof_token):
     """
     print("Remove  Directory Called ",command_and_arg)
     
-    client_socket.sendall(command_and_arg.encode())
+    
+    client_socket.sendall(command_and_arg.encode()+eof_token)
+    print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
     
 
 
@@ -110,12 +114,15 @@ def issue_ul(command_and_arg, client_socket, eof_token):
 
     #send file name to server
     file_name = command_and_arg.split(' ')[1]
-    client_socket.sendall(command_and_arg.encode())
+    client_socket.sendall(command_and_arg.encode()+eof_token)
   
     with open(file_name,'rb') as f:
                 file_content = f.read()
     file_content_with_EOF = file_content + eof_token       
     client_socket.sendall(file_content_with_EOF)
+    
+    client_socket.sendall(file_content_with_EOF)
+    print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
 
 
 def issue_dl(command_and_arg, client_socket, eof_token):
@@ -130,11 +137,14 @@ def issue_dl(command_and_arg, client_socket, eof_token):
     :return:
     """
     file_name = command_and_arg.split(' ')[1]
-    client_socket.sendall(command_and_arg.encode())
-    file = open(file_name, "wb")    
+    client_socket.sendall(command_and_arg.encode()+eof_token)
+    
     file_content = receive_message_ending_with_token(client_socket, 1024,eof_token)    
+    file = open(file_name, "wb")    
     file.write(file_content)
     file.close()
+    
+    print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
     
 
 
@@ -181,10 +191,7 @@ def main():
                 client_socket_object.sendall('exit'.encode())
                 client_socket_object.close()
                 break 
-            current_dir_info = receive_message_ending_with_token(client_socket_object, 1024, eof_key)
-         
             
-            print('Working Directory Info:', current_dir_info.decode())
             
 
         except ValueError:
