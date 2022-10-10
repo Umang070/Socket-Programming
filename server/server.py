@@ -115,10 +115,7 @@ def handle_rm(current_working_directory, object_name):
         return 'Directory/File Removed :'                    
     else:
         print("Neither directory nor file found at specified location")
-        return 'Error ' + 'Neither directory nor file found at specified location'
-
-    # Delete an Empty Directory 
-    # path = Path(empty_dir).rmdir()
+        return 'Error ' + 'Neither directory nor file found at specified location'   
     
  
  

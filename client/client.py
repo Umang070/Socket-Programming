@@ -62,8 +62,7 @@ def issue_cd(command_and_arg, client_socket, eof_token):
     :param command_and_arg: full command (with argument) provided by the user.
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
-    """
-    print("Change Directory Called ",command_and_arg)
+    """    
     client_socket.sendall(command_and_arg.encode()+eof_token)
     print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
 
@@ -76,8 +75,6 @@ def issue_mkdir(command_and_arg, client_socket, eof_token):
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
     """
-    print("Create Directory Called ",command_and_arg)
-    
     client_socket.sendall(command_and_arg.encode()+eof_token)
     print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
 
@@ -93,10 +90,7 @@ def issue_rm(command_and_arg, client_socket, eof_token):
     :param command_and_arg: full command (with argument) provided by the user.
     :param client_socket: the active client socket object.
     :param eof_token: a token to indicate the end of the message.
-    """
-    print("Remove  Directory Called ",command_and_arg)
-    
-    
+    """    
     client_socket.sendall(command_and_arg.encode()+eof_token)
     print("Working Directory Information : ",receive_message_ending_with_token(client_socket, 1024, eof_token).decode())
     
